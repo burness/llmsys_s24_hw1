@@ -64,8 +64,35 @@ def topological_sort(variable: Variable) -> Iterable[Variable]:
     """
     # BEGIN ASSIGN1_1
     # TODO
-    
-    raise NotImplementedError("Task Autodiff Not Implemented Yet")
+    permanent_marked = []
+    temporary_marked = []
+    result = []
+
+    def visit(n):
+        if n.is_constant():
+            return
+        if n.unique_id in permanent_marked:
+            return
+        elif n.unique_id in temporary_marked:
+            raise(RuntimeError("Not a DAG"))
+        temporary_marked.append(n.unique_id)
+        if n.is_leaf():
+            pass
+        else:
+            for input in n.history.inputs:
+                visit(input)
+        
+        temporary_marked.remove(n.unique_id)
+        permanent_marked.append(n.unique_id)
+
+        result.insert(0, n)
+
+
+    visit(variable)
+    return result
+
+    # raise NotImplementedError("Task Autodiff Not Implemented Yet")
+    # return stack
     # END ASSIGN1_1
 
 
@@ -82,8 +109,21 @@ def backpropagate(variable: Variable, deriv: Any) -> None:
     """
     # BEGIN ASSIGN1_1
     # TODO
-   
-    raise NotImplementedError("Task Autodiff Not Implemented Yet")
+    order = topological_sort(variable)
+    derivs = {variable.unique_id: deriv}
+    for node in order:
+        d_output = derivs[node.unique_id]
+        if node.is_leaf():
+            node.accumulate_derivative(d_output)
+        else:
+            # for input, d in node.history.backprop_step(d_output):
+            # backprop_step = node.history.last_fn.chain_rule(node.history.ctx, node.history.inputs, d_output)
+
+            for input, d in node.chain_rule(d_output):
+                if input.unique_id not in derivs:
+                    derivs[input.unique_id] = 0.0
+                derivs[input.unique_id] += d
+    return
     # END ASSIGN1_1
 
 
